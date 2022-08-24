@@ -5,30 +5,7 @@
 
 #include <iostream>
 
-std::vector<uint8_t> decompressChunks(const factorygame::SaveFileLoader& loader, std::istream& fileStream) {
-    std::vector<uint8_t> result;
-    auto& chunks = loader.chunks();
-    int64_t uncompressedSizeSum = 0;
-    for (auto& chunk : chunks) {
-        uncompressedSizeSum += chunk.uncompressedSize;
-    }
-    result.reserve(uncompressedSizeSum);
-    for (auto& chunk : chunks) {
-        fileStream.seekg(chunk.pos);
-        std::vector<uint8_t> buffer;
-        buffer.resize(chunk.compressedSize);
-        fileStream.read((char*)buffer.data(), chunk.compressedSize);
-        auto uncompressedData = Compressor::decompress(buffer, chunk.uncompressedSize);
-        result.resize(result.size() + uncompressedData.size());
-        auto dstStart = &result.at(result.size() - uncompressedData.size());
-        memcpy((char*)dstStart, uncompressedData.data(), uncompressedData.size());
-    }
-    return result;
-}
-
-void testSaveFile() {
-    //std::cout << "Hello World!\n";
-    std::string filename = "proba.sav";
+void testSaveFile(std::string filename) {
     factorygame::SaveFileLoader loader(filename);
 
     std::cout << loader.header().toString() << std::endl;
@@ -39,16 +16,7 @@ void testSaveFile() {
     std::ofstream ofs;
     std::string uncompressedFilename = "uncompressed_body.dat";
     ofs.open(uncompressedFilename, std::ios::binary);
-    auto uncompressedData = decompressChunks(loader, ifs);
-    /*for (auto& chunk : chunks) {
-        ifs.seekg(chunk.pos);
-        std::vector<uint8_t> buffer;
-        buffer.resize(chunk.compressedSize);
-        ifs.read((char*)buffer.data(), chunk.compressedSize);
-        auto uncompressedData = Compressor::decompress(buffer, chunk.uncompressedSize);
-        ofs.write((const char*)uncompressedData.data(), uncompressedData.size());
-        std::cout << "chunk [" << chunk.pos << "]: " << chunk.compressedSize << " / " << chunk.uncompressedSize << " - " << chunk.compressedSize / (float)chunk.uncompressedSize * 100.0f << " %" << std::endl;
-    }*/
+    auto uncompressedData = factorygame::SaveFileLoader::decompressChunks(loader, ifs);
     ofs.write((const char*)uncompressedData.data(), uncompressedData.size());
     ofs.close();
     std::ifstream uncompressedInputStream;
@@ -86,10 +54,14 @@ void testCompressor() {
     std::cout << "decompressed str: " << std::string((const char*)decompressedData.data()) << std::endl;
 }
 
-int main()
+int main(int argc, const char* argv[])
 {
     try {
-        testSaveFile();
+        std::string filename = "proba.sav";
+        if (argc > 1) {
+            filename = std::string(argv[1]);
+        }
+        testSaveFile(filename);
         //testCompressor();
     } catch (const std::exception& e) {
         std::cout << "exception: " << e.what() << std::endl;

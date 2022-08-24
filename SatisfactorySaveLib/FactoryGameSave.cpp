@@ -1,5 +1,6 @@
 #include "FactoryGameSave.h"
 
+#include "Compressor.h"
 
 namespace factorygame {
 
@@ -63,6 +64,55 @@ namespace factorygame {
         body.uncompressedSize2 = reader.readBasicType<Int>();
         reader.readBasicType<Int>(); // padding
         return body;
+    }
+
+    std::vector<CompressedChunkInfo> SaveFileLoader::_collectChunkPositions(std::istream& stream) {
+        std::vector<CompressedChunkInfo> chunks;
+        try {
+            while (stream.good()) {
+                auto pos = stream.tellg();
+                auto chunkInfo = CompressedChunkHeader::read(stream);
+                CompressedChunkInfo compressedChunk;
+                compressedChunk.pos = pos + CompressedChunkHeader::headerSize;
+                compressedChunk.compressedSize = chunkInfo.compressedSize;
+                compressedChunk.uncompressedSize = chunkInfo.uncompressedSize;
+                chunks.push_back(compressedChunk);
+                stream.seekg(compressedChunk.compressedSize, std::ios::cur);
+            }
+        }
+        catch (...) {}
+        return chunks;
+    }
+
+    SaveFileLoader::SaveFileLoader(std::string filename) {
+        std::ifstream ifs;
+        ifs.open(filename, std::ios::binary);
+        if (!ifs.is_open()) {
+            throw std::runtime_error(std::string("Couldn't open file: ") + filename);
+        }
+        _header = SaveFileHeader::read(ifs);
+        _chunks = _collectChunkPositions(ifs);
+    }
+
+    std::vector<uint8_t> SaveFileLoader::decompressChunks(const factorygame::SaveFileLoader& loader, std::istream& fileStream) {
+        std::vector<uint8_t> result;
+        auto& chunks = loader.chunks();
+        int64_t uncompressedSizeSum = 0;
+        for (auto& chunk : chunks) {
+            uncompressedSizeSum += chunk.uncompressedSize;
+        }
+        result.reserve(uncompressedSizeSum);
+        for (auto& chunk : chunks) {
+            fileStream.seekg(chunk.pos);
+            std::vector<uint8_t> buffer;
+            buffer.resize(chunk.compressedSize);
+            fileStream.read((char*)buffer.data(), chunk.compressedSize);
+            auto uncompressedData = Compressor::decompress(buffer, chunk.uncompressedSize);
+            result.resize(result.size() + uncompressedData.size());
+            auto dstStart = &result.at(result.size() - uncompressedData.size());
+            memcpy((char*)dstStart, uncompressedData.data(), uncompressedData.size());
+        }
+        return result;
     }
 
 }

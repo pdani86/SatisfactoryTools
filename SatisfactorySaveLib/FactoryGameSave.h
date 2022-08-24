@@ -253,40 +253,18 @@ namespace factorygame {
     
     class SaveFileLoader {
     public:
-        explicit SaveFileLoader(std::string filename) {
-            std::ifstream ifs;
-            ifs.open(filename, std::ios::binary);
-            if (!ifs.is_open()) {
-                throw std::runtime_error(std::string("Couldn't open file: ") + filename);
-            }
-            _header = SaveFileHeader::read(ifs);
-            _chunks = _collectChunkPositions(ifs);
-        }
+        explicit SaveFileLoader(std::string filename);
 
         const SaveFileHeader& header() const { return _header; }
         const std::vector<CompressedChunkInfo>& chunks() const { return _chunks; }
+
+        static std::vector<uint8_t> decompressChunks(const factorygame::SaveFileLoader& loader, std::istream& fileStream);
 
     private:
         SaveFileHeader _header;
         std::vector<CompressedChunkInfo> _chunks;
 
     private:
-        static std::vector<CompressedChunkInfo> _collectChunkPositions(std::istream& stream) {
-            std::vector<CompressedChunkInfo> chunks;
-            try {
-                while (stream.good()) {
-                    auto pos = stream.tellg();
-                    auto chunkInfo = CompressedChunkHeader::read(stream);
-                    CompressedChunkInfo compressedChunk;
-                    compressedChunk.pos = pos + CompressedChunkHeader::headerSize;
-                    compressedChunk.compressedSize = chunkInfo.compressedSize;
-                    compressedChunk.uncompressedSize = chunkInfo.uncompressedSize;
-                    chunks.push_back(compressedChunk);
-                    stream.seekg(compressedChunk.compressedSize, std::ios::cur);
-                }
-            }
-            catch (...) {}
-            return chunks;
-        }
+        static std::vector<CompressedChunkInfo> _collectChunkPositions(std::istream& stream);
     };
 }
