@@ -32,7 +32,18 @@ int main()
         ofs.close();
         std::ifstream uncompressedInputStream;
         uncompressedInputStream.open(uncompressedFilename, std::ios::binary);
+
         auto saveFileBody = factorygame::SaveFileBody::read(uncompressedInputStream);
+
+
+        std::ofstream log("log_objects.txt", std::ios::binary);
+        for (auto& actorHeader : saveFileBody.actorHeaders) {
+            log << actorHeader.instanceName.str << " [" << actorHeader.posX << "," << actorHeader.posY << "," << actorHeader.posZ << "]" << "\n";
+        }
+        for (auto& componentHeader : saveFileBody.componentHeaders) {
+            log << componentHeader.instanceName.str << "\n";
+        }
+
     } catch (const std::exception& e) {
         std::cout << "exception: " << e.what() << std::endl;
     }

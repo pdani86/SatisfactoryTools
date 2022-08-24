@@ -217,17 +217,10 @@ namespace factorygame {
 
             header.objectCount = reader.readBasicType<Int>();
             for (int objIx = 0; objIx < header.objectCount; ++objIx) {
-
+                // TODO
             }
 
-            // ------------
-            for (auto& actorHeader : header.actorHeaders) {
-                std::cout << actorHeader.instanceName.str << " [" << actorHeader.posX << "," << actorHeader.posY << "," << actorHeader.posZ << "\n";
-            }
-            for (auto& componentHeader : header.componentHeaders) {
-                std::cout << componentHeader.instanceName.str << "\n";
-            }
-            // ------------
+            // TODO
 
             return header;
         }
