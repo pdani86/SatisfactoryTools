@@ -271,7 +271,7 @@ namespace factorygame {
         std::vector<CompressedChunkInfo> _chunks;
 
     private:
-        static std::vector<CompressedChunkInfo> _collectChunkPositions(std::ifstream& stream) {
+        static std::vector<CompressedChunkInfo> _collectChunkPositions(std::istream& stream) {
             std::vector<CompressedChunkInfo> chunks;
             try {
                 while (stream.good()) {
