@@ -53,6 +53,7 @@ namespace factorygame {
             value.str.resize(size, '\0');
             if (size)
                 _stream.read((char*)&value.str.at(0), size);
+            value.str = std::string(value.str.c_str());
             return value;
         }
 
@@ -200,8 +201,12 @@ namespace factorygame {
         static SaveFileBody read(std::istream& stream) {
             PropertyReader reader(stream);
             SaveFileBody header;
-            header.uncompressedSize= reader.readBasicType<Int>();
+            header.uncompressedSize = reader.readBasicType<Int>();
             header.objectHeaderCount = reader.readBasicType<Int>();
+
+            header.actorHeaders.reserve(header.objectHeaderCount);
+            header.componentHeaders.reserve(header.objectHeaderCount);
+
             for (int objIx = 0; objIx < header.objectHeaderCount; ++objIx) {
                 auto objectHeader = ObjectHeader::read(stream);
                 switch (objectHeader.headerType) {
