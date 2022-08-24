@@ -24,12 +24,16 @@ static void myfree(void* q, void* p) {
     free(p);
 }
 
-std::vector<uint8_t> Compressor::compress(const std::vector<uint8_t>& data/*, int64_t targetSizeHint*/) {
+std::vector<uint8_t> Compressor::compress(const std::vector<uint8_t>& data) {
+    return Compressor::compress(data.data(), data.size());
+}
+
+std::vector<uint8_t> Compressor::compress(const uint8_t* data, int64_t size) {
     std::vector<uint8_t> result;
-    result.resize(data.size() + 64);
+    result.resize(size + 64);
     z_stream c_stream; /* compression stream */
     int err;
-    auto len = data.size();
+    auto len = size;
 
     c_stream.zalloc = myalloc;
     c_stream.zfree = myfree;
@@ -41,7 +45,7 @@ std::vector<uint8_t> Compressor::compress(const std::vector<uint8_t>& data/*, in
     check_zlib_err(err);
 
     c_stream.avail_in = len;
-    c_stream.next_in = (z_const unsigned char*)data.data();
+    c_stream.next_in = (z_const unsigned char*)data;
     c_stream.next_out = result.data();
     c_stream.avail_out = result.size();
 

@@ -4,6 +4,22 @@
 #include "..\SatisfactorySaveLib\Compressor.h"
 
 #include <iostream>
+#include <numeric>
+
+std::vector < std::vector<uint8_t>> compressDataIntoChunks(const std::vector<uint8_t>& data) {
+    
+    std::vector < std::vector<uint8_t>> chunks;
+    int64_t rem = data.size();
+    constexpr int64_t blockSize = 64 * 1024;
+    const uint8_t* srcPtr = data.data();
+    do {
+        auto size = std::min(blockSize, rem);
+        chunks.emplace_back(Compressor::compress(srcPtr, size));
+        srcPtr += size;
+        rem -= size;
+    } while (rem > 0);
+    return chunks;
+}
 
 void testSaveFile(std::string filename) {
     factorygame::SaveFileLoader loader(filename);
@@ -33,6 +49,14 @@ void testSaveFile(std::string filename) {
         log << componentHeader.instanceName.str << "\n";
     }
 
+    auto recompressedChunks = compressDataIntoChunks(uncompressedData);
+    std::cout << "recompressed nchunk: " << recompressedChunks.size() << std::endl;
+    std::ofstream recompFile("recomp.txt", std::ios::binary);
+    for (auto& chunk : recompressedChunks) {
+        recompFile.write((const char*)chunk.data(), chunk.size());
+    }
+    auto sumsumsum = std::accumulate(recompressedChunks.begin(), recompressedChunks.end(), 0ll, [](int64_t s, const std::vector<uint8_t>& v) -> int64_t {return s + v.size(); });
+    std::cout << "recompressed size sum: " << sumsumsum << std::endl;
 }
 
 void testCompressor() {
