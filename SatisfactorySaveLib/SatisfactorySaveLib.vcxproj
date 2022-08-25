@@ -21,10 +21,13 @@
   <ItemGroup>
     <ClCompile Include="Compressor.cpp" />
     <ClCompile Include="FactoryGameSave.cpp" />
+    <ClCompile Include="Floor.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Compressor.h" />
     <ClInclude Include="FactoryGameSave.h" />
+    <ClInclude Include="FactoryMachine.h" />
+    <ClInclude Include="Floor.h" />
     <ClInclude Include="Properties.h" />
     <ClInclude Include="PropertyReader.h" />
   </ItemGroup>
