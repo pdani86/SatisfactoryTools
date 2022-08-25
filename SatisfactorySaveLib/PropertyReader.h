@@ -59,7 +59,7 @@ namespace factorygame {
 
         template<>
         void writeBasicType(const String& str) {
-            int32_t size = str.str.size()+1;
+            int32_t size = static_cast<int32_t>(str.str.size()+1);
             _stream.write((const char*)&size, sizeof(int32_t));
             _stream.write(str.str.data(), str.str.size());
             _stream.write("\0", 1);

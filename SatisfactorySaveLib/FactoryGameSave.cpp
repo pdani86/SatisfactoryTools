@@ -82,6 +82,24 @@ namespace factorygame {
         return body;
     }
 
+    void CompressedChunkHeader::write(std::ostream& stream) const {
+        PropertyWriter writer(stream);
+        Int padding{ 0 };
+        writer.writeBasicType(unrealSignature);
+        writer.writeBasicType(padding);
+        writer.writeBasicType(maxChunkSize);
+        writer.writeBasicType(padding);
+        writer.writeBasicType(compressedSize);
+        writer.writeBasicType(padding);
+        writer.writeBasicType(uncompressedSize);
+        writer.writeBasicType(padding);
+        writer.writeBasicType(compressedSize2);
+        writer.writeBasicType(padding);
+        writer.writeBasicType(uncompressedSize2);
+        writer.writeBasicType(padding);
+    }
+
+
     std::vector<CompressedChunkInfo> SaveFileLoader::_collectChunkPositions(std::istream& stream) {
         std::vector<CompressedChunkInfo> chunks;
         try {

@@ -5,6 +5,7 @@
 #include <sstream>
 #include <fstream>
 #include <vector>
+#include <variant>
 
 #include "Properties.h"
 #include "PropertyReader.h"
@@ -213,6 +214,22 @@ namespace factorygame {
     };
 
     struct ObjectReference {
+        String levelName;
+        String pathName;
+
+        static ObjectReference read(std::istream& stream) {
+            PropertyReader reader(stream);
+            ObjectReference result;
+            result.levelName = reader.readBasicType<String>();
+            result.pathName = reader.readBasicType<String>();
+            return result;
+        }
+
+        void write(std::ostream& stream) const {
+            PropertyWriter writer(stream);
+            writer.writeBasicType(levelName);
+            writer.writeBasicType(pathName);
+        }
 
     };
 
@@ -270,7 +287,7 @@ namespace factorygame {
                     
                 }
             }
-
+            header.collectedObjectsCount = reader.readBasicType<Int>();
             // TODO
 
             return header;
@@ -280,8 +297,6 @@ namespace factorygame {
             PropertyWriter writer(stream);
             writer.writeBasicType(uncompressedSize);
             writer.writeBasicType(objectHeaderCount);
-            writer.writeBasicType(objectCount);
-            writer.writeBasicType(collectedObjectsCount);
 
             for (auto& actorHeader : actorHeaders) {
                 actorHeader.write(stream);
@@ -289,12 +304,17 @@ namespace factorygame {
             for (auto& componentHeader : componentHeaders) {
                 componentHeader.write(stream);
             }
+
+            writer.writeBasicType(objectCount);
+            
             for (auto& actor : actorObjects) {
                 actor.write(stream);
             }
             for (auto& component : componentObjects) {
                 component.write(stream);
             }
+
+            writer.writeBasicType(collectedObjectsCount);
         }
     };
 
@@ -309,6 +329,18 @@ namespace factorygame {
 
         static constexpr int64_t headerSize = 12*sizeof(int32_t);
         static CompressedChunkHeader read(std::istream& stream);
+
+        static CompressedChunkHeader create(int32_t compressedSize, int32_t uncompressedSize) {
+            CompressedChunkHeader result;
+            static constexpr uint32_t unrealMagic = 0x9E2A83C1;
+            result.unrealSignature = unrealMagic;
+            result.maxChunkSize = 128*1024;
+            result.compressedSize = result.compressedSize2 = compressedSize;
+            result.uncompressedSize = result.uncompressedSize2 = uncompressedSize;
+            return result;
+        }
+
+        void write(std::ostream& stream) const;
     };
 
     struct CompressedChunkInfo {

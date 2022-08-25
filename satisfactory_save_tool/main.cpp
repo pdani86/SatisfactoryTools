@@ -43,9 +43,12 @@ void testSaveFile(std::string filename) {
     std::stringstream writeBackTestSS;
     saveFileBody.write(writeBackTestSS);
     auto writeBackTestStr = writeBackTestSS.str();
-    std::cout << "writeback body size: " << writeBackTestStr.size() << std::endl;
+    
     std::cout << "uncompressed body size: " << uncompressedData.size() << std::endl;
-
+    std::cout << "writeback body size: " << writeBackTestStr.size() << std::endl;
+    std::ofstream uncompWriteBackFile("uncomp_writeback.txt", std::ios::binary);
+    uncompWriteBackFile.write(writeBackTestStr.data(), writeBackTestStr.size());
+    uncompWriteBackFile.flush();
 
     std::ofstream log("log_objects.txt", std::ios::binary);
     for (auto& actorHeader : saveFileBody.actorHeaders) {
