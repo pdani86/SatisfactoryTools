@@ -390,14 +390,17 @@ namespace factorygame {
 
         static void save(std::ostream& stream, const SaveFileHeader& header, const SaveFileBody& body) {
             header.write(stream);
-
             std::stringstream uncompressedDataSS; // TODO??, inefficient, stream vs vector
             body.write(uncompressedDataSS);
             std::vector<uint8_t> uncompressedData;
             auto str = uncompressedDataSS.str();
             uncompressedData.resize(str.size());
             memcpy(uncompressedData.data(), str.data(), str.size());
-            *reinterpret_cast<int32_t*>(&uncompressedData.data()[0]) = uncompressedData.size(); // fix uncompressed size
+            *reinterpret_cast<int32_t*>(&uncompressedData.data()[0]) = uncompressedData.size() - 4; // fix uncompressed size
+
+            //std::ofstream ofs("uncomprbeforesave.txt", std::ios::binary);
+            //ofs.write((const char*)uncompressedData.data(), uncompressedData.size());
+
             auto chunks = _compressDataIntoChunks(uncompressedData);
             for (auto& chunk : chunks) {
                 _writeChunk(stream, chunk);
@@ -405,9 +408,7 @@ namespace factorygame {
         }
 
         static void _writeChunk(std::ostream& stream, const CompressedChunk& chunk) {
-            CompressedChunkHeader header;
-            header.compressedSize = header.compressedSize2 = chunk.data.size();
-            header.uncompressedSize = header.uncompressedSize2 =chunk.uncompressedSize;
+            CompressedChunkHeader header = CompressedChunkHeader::create(chunk.data.size(), chunk.uncompressedSize);
             header.write(stream);
             stream.write((const char*)chunk.data.data(), chunk.data.size());
         }

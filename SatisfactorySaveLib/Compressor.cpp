@@ -40,7 +40,7 @@ std::vector<uint8_t> Compressor::compress(const uint8_t* data, int64_t size) {
     c_stream.opaque = (voidpf)0;
 
     //return (ZLibReturnCode)deflateInit2_64(ref strm, (int)level, (int)ZLibCompressionMethod.Deflated, windowBits, (int)ZLibMemLevel.Default, (int)ZLibCompressionStrategy.Default, ZLibVersion, Marshal.SizeOf(typeof(z_streamp)));
-    //err = deflateInit2(&c_stream, ...);
+    //err = deflateInit2(&c_stream, Z_DEFAULT_COMPRESSION, Z_DEFLATED, -15, MAX_MEM_LEVEL, Z_DEFAULT_STRATEGY);
     err = deflateInit(&c_stream, Z_DEFAULT_COMPRESSION);
     check_zlib_err(err);
 
