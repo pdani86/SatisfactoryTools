@@ -32,5 +32,8 @@
     <ClInclude Include="Properties.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="PropertyReader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

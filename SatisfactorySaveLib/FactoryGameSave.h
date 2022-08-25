@@ -7,61 +7,9 @@
 #include <vector>
 
 #include "Properties.h"
+#include "PropertyReader.h"
 
 namespace factorygame {
-
-
-
-    using Byte = int8_t;
-    using Int = int32_t;
-    using Long = int64_t;
-    using Float = float;
-    struct String {
-        int32_t size;
-        std::string str;
-    };
-
-
-    class PropertyReader {
-    public:
-        explicit PropertyReader(std::istream& stream) : _stream(stream) {}
-
-        static constexpr auto MAX_STRING_LEN = 1024*1024;
-
-        template<typename T>
-        T readBasicType() {
-            T value;
-            _stream.read((char*)&value, sizeof(value));
-            return value;
-        }
-
-        template<>
-        String readBasicType() {
-            String value;
-            int32_t sizeTmp = 0;
-            _stream.read((char*)&sizeTmp, sizeof(sizeTmp));
-            const bool notUtf8 = sizeTmp < 0;
-            const int32_t size = std::abs(sizeTmp);
-            value.size = size;
-            if (size > MAX_STRING_LEN) {
-                throw std::runtime_error("String too large");
-            }
-            if (notUtf8) {
-                //throw std::runtime_error("Only UTF8 is supported");
-                //return std::string();
-            }
-            value.str.resize(size, '\0');
-            if (size)
-                _stream.read((char*)&value.str.at(0), size);
-            value.str = std::string(value.str.c_str());
-            return value;
-        }
-
-
-    private:
-        std::istream& _stream;
-    };
-
 
     struct SaveFileHeader {
         Int saveHeaderVersion{};
@@ -173,15 +121,43 @@ namespace factorygame {
         String parentObjectRoot;
         String parentObjectName;
         Int componentCount{};
+
+        std::vector<uint8_t> raw;
         // components...
         // properties...
         // trailing bytes...
+
+        static ActorObject read(std::istream& stream) {
+            PropertyReader reader(stream);
+            ActorObject result;
+            result.size = reader.readBasicType<Int>();
+            result.parentObjectRoot = reader.readBasicType<String>();
+            result.parentObjectName = reader.readBasicType<String>();
+            result.componentCount = reader.readBasicType<Int>();
+            auto rawSize = result.size - 1 * sizeof(int32_t) - 2 * sizeof(int32_t) - result.parentObjectName.size - result.parentObjectRoot.size;
+            result.raw.resize(rawSize);
+            stream.read((char*)result.raw.data(), rawSize);
+            return result;
+        }
     };
 
     struct ComponentObject {
         Int size{};
+
+        std::vector<uint8_t> raw;
         // properties...
         // trailing bytes...
+
+        static ComponentObject read(std::istream& stream) {
+            PropertyReader reader(stream);
+            ComponentObject result;
+            result.size = reader.readBasicType<Int>();
+
+            auto rawSize = result.size;
+            result.raw.resize(rawSize);
+            stream.read((char*)result.raw.data(), rawSize);
+            return result;
+        }
     };
 
     struct ObjectReference {
@@ -197,6 +173,9 @@ namespace factorygame {
 
         std::vector<ActorHeader> actorHeaders;
         std::vector<ComponentHeader> componentHeaders;
+        std::vector<int> headerTypes;
+        std::vector<ActorObject> actorObjects;
+        std::vector<ComponentObject> componentObjects;
 
         static SaveFileBody read(std::istream& stream) {
             PropertyReader reader(stream);
@@ -212,17 +191,32 @@ namespace factorygame {
                 switch (objectHeader.headerType) {
                     case 0: {
                         header.componentHeaders.emplace_back(ComponentHeader::read(stream));
+                        header.headerTypes.push_back(0);
                     } break;
                     case 1: {
                         header.actorHeaders.emplace_back(ActorHeader::read(stream));
+                        header.headerTypes.push_back(1);
                     } break;
                     default: break;
                 }
             }
 
             header.objectCount = reader.readBasicType<Int>();
-            for (int objIx = 0; objIx < header.objectCount; ++objIx) {
+
+            if (header.objectHeaderCount != header.objectCount) {
                 // TODO
+                return header;
+            }
+
+            for (int objIx = 0; objIx < header.objectCount; ++objIx) {
+                //break; // 
+                // TODO
+                if (header.headerTypes[objIx] == 0) {
+                    header.componentObjects.emplace_back(ComponentObject::read(stream));
+                } else {
+                    header.actorObjects.emplace_back(ActorObject::read(stream));
+                    
+                }
             }
 
             // TODO

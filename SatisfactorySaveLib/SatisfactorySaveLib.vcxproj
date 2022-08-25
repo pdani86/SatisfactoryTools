@@ -26,6 +26,7 @@
     <ClInclude Include="Compressor.h" />
     <ClInclude Include="FactoryGameSave.h" />
     <ClInclude Include="Properties.h" />
+    <ClInclude Include="PropertyReader.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
