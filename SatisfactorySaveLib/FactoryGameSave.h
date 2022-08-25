@@ -42,6 +42,12 @@ namespace factorygame {
 
 
         static SaveFileHeader read(std::istream& stream);
+        void write(std::ostream& stream) const;
+    };
+
+    enum class ObjectType {
+        Component = 0,
+        Actor = 1
     };
 
     struct ObjectHeader {
@@ -97,6 +103,27 @@ namespace factorygame {
 
             return header;
         }
+
+        void write(std::ostream& stream) const {
+            PropertyWriter writer(stream);
+            writer.writeBasicType(Int{(int)ObjectType::Actor});
+            writer.writeBasicType(typePath);
+            writer.writeBasicType(rootObject);
+            writer.writeBasicType(instanceName);
+
+            writer.writeBasicType(needTransform);
+            writer.writeBasicType(rotX);
+            writer.writeBasicType(rotY);
+            writer.writeBasicType(rotZ);
+            writer.writeBasicType(rotW);
+            writer.writeBasicType(posX);
+            writer.writeBasicType(posY);
+            writer.writeBasicType(posZ);
+            writer.writeBasicType(scaleX);
+            writer.writeBasicType(scaleY);
+            writer.writeBasicType(scaleZ);
+            writer.writeBasicType(wasPlacedInLevel);
+        }
     };
 
     struct ComponentHeader {
@@ -114,9 +141,19 @@ namespace factorygame {
             header.parentActorName = reader.readBasicType<String>();
             return header;
         }
+
+        void write(std::ostream& stream) const {
+            PropertyWriter writer(stream);
+            writer.writeBasicType(Int{ (int)ObjectType::Component});
+            writer.writeBasicType(typePath);
+            writer.writeBasicType(rootObject);
+            writer.writeBasicType(instanceName);
+
+            writer.writeBasicType(parentActorName);
+        }
     };
 
-    struct ActorObject {
+    struct ActorObjectRaw {
         Int size{};
         String parentObjectRoot;
         String parentObjectName;
@@ -127,9 +164,9 @@ namespace factorygame {
         // properties...
         // trailing bytes...
 
-        static ActorObject read(std::istream& stream) {
+        static ActorObjectRaw read(std::istream& stream) {
             PropertyReader reader(stream);
-            ActorObject result;
+            ActorObjectRaw result;
             result.size = reader.readBasicType<Int>();
             result.parentObjectRoot = reader.readBasicType<String>();
             result.parentObjectName = reader.readBasicType<String>();
@@ -139,24 +176,39 @@ namespace factorygame {
             stream.read((char*)result.raw.data(), rawSize);
             return result;
         }
+
+        void write(std::ostream& stream) const {
+            PropertyWriter writer(stream);
+            writer.writeBasicType(size);
+            writer.writeBasicType(parentObjectRoot);
+            writer.writeBasicType(parentObjectName);
+            writer.writeBasicType(componentCount);
+            stream.write((const char*)raw.data(), raw.size());
+        }
     };
 
-    struct ComponentObject {
+    struct ComponentObjectRaw {
         Int size{};
 
         std::vector<uint8_t> raw;
         // properties...
         // trailing bytes...
 
-        static ComponentObject read(std::istream& stream) {
+        static ComponentObjectRaw read(std::istream& stream) {
             PropertyReader reader(stream);
-            ComponentObject result;
+            ComponentObjectRaw result;
             result.size = reader.readBasicType<Int>();
 
             auto rawSize = result.size;
             result.raw.resize(rawSize);
             stream.read((char*)result.raw.data(), rawSize);
             return result;
+        }
+
+        void write(std::ostream& stream) const {
+            PropertyWriter writer(stream);
+            writer.writeBasicType(size);
+            stream.write((const char*)raw.data(), raw.size());
         }
     };
 
@@ -174,8 +226,8 @@ namespace factorygame {
         std::vector<ActorHeader> actorHeaders;
         std::vector<ComponentHeader> componentHeaders;
         std::vector<int> headerTypes;
-        std::vector<ActorObject> actorObjects;
-        std::vector<ComponentObject> componentObjects;
+        std::vector<ActorObjectRaw> actorObjects;
+        std::vector<ComponentObjectRaw> componentObjects;
 
         static SaveFileBody read(std::istream& stream) {
             PropertyReader reader(stream);
@@ -212,9 +264,9 @@ namespace factorygame {
                 //break; // 
                 // TODO
                 if (header.headerTypes[objIx] == 0) {
-                    header.componentObjects.emplace_back(ComponentObject::read(stream));
+                    header.componentObjects.emplace_back(ComponentObjectRaw::read(stream));
                 } else {
-                    header.actorObjects.emplace_back(ActorObject::read(stream));
+                    header.actorObjects.emplace_back(ActorObjectRaw::read(stream));
                     
                 }
             }
@@ -222,6 +274,27 @@ namespace factorygame {
             // TODO
 
             return header;
+        }
+
+        void write(std::ostream& stream) {
+            PropertyWriter writer(stream);
+            writer.writeBasicType(uncompressedSize);
+            writer.writeBasicType(objectHeaderCount);
+            writer.writeBasicType(objectCount);
+            writer.writeBasicType(collectedObjectsCount);
+
+            for (auto& actorHeader : actorHeaders) {
+                actorHeader.write(stream);
+            }
+            for (auto& componentHeader : componentHeaders) {
+                componentHeader.write(stream);
+            }
+            for (auto& actor : actorObjects) {
+                actor.write(stream);
+            }
+            for (auto& component : componentObjects) {
+                component.write(stream);
+            }
         }
     };
 

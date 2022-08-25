@@ -46,4 +46,27 @@ namespace factorygame {
         std::istream& _stream;
     };
 
+    class PropertyWriter {
+    public:
+        explicit PropertyWriter(std::ostream& stream) : _stream(stream) {
+
+        }
+
+        template<typename T>
+        void writeBasicType(const T& value) {
+            _stream.write((char*)&value, sizeof(value));
+        }
+
+        template<>
+        void writeBasicType(const String& str) {
+            int32_t size = str.str.size()+1;
+            _stream.write((const char*)&size, sizeof(int32_t));
+            _stream.write(str.str.data(), str.str.size());
+            _stream.write("\0", 1);
+        }
+
+    private:
+        std::ostream& _stream;
+    };
+
 }

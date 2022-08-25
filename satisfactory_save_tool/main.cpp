@@ -40,6 +40,12 @@ void testSaveFile(std::string filename) {
 
     auto saveFileBody = factorygame::SaveFileBody::read(uncompressedInputStream);
 
+    std::stringstream writeBackTestSS;
+    saveFileBody.write(writeBackTestSS);
+    auto writeBackTestStr = writeBackTestSS.str();
+    std::cout << "writeback body size: " << writeBackTestStr.size() << std::endl;
+    std::cout << "uncompressed body size: " << uncompressedData.size() << std::endl;
+
 
     std::ofstream log("log_objects.txt", std::ios::binary);
     for (auto& actorHeader : saveFileBody.actorHeaders) {

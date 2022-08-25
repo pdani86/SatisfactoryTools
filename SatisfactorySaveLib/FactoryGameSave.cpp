@@ -40,6 +40,22 @@ namespace factorygame {
         return header;
     }
 
+    void SaveFileHeader::write(std::ostream& stream) const {
+        PropertyWriter writer(stream);
+        writer.writeBasicType(saveHeaderVersion);
+        writer.writeBasicType(saveVersion);
+        writer.writeBasicType(buildVersion);
+        writer.writeBasicType(mapName);
+        writer.writeBasicType(mapOptions);
+        writer.writeBasicType(sessionName);
+        writer.writeBasicType(playedSeconds);
+        writer.writeBasicType(saveTimestamp);
+        writer.writeBasicType(sessionVisibility);
+        writer.writeBasicType(editorObjectVersion);
+        writer.writeBasicType(modMetaData);
+        writer.writeBasicType(modFlags);
+    }
+
 
     CompressedChunkHeader CompressedChunkHeader::read(std::istream& stream) {
         PropertyReader reader(stream);
