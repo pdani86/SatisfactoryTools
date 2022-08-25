@@ -98,7 +98,7 @@ namespace factorygame {
 
         void write(std::ostream& stream) const {
             PropertyWriter writer(stream);
-            writer.writeBasicType(Int{(int)ObjectType::Actor});
+            writer.writeBasicType(Int{ (int)1 });
             writer.writeBasicType(typePath);
             writer.writeBasicType(rootObject);
             writer.writeBasicType(instanceName);
@@ -136,7 +136,7 @@ namespace factorygame {
 
         void write(std::ostream& stream) const {
             PropertyWriter writer(stream);
-            writer.writeBasicType(Int{ (int)ObjectType::Component});
+            writer.writeBasicType(Int{(int)0});
             writer.writeBasicType(typePath);
             writer.writeBasicType(rootObject);
             writer.writeBasicType(instanceName);
@@ -156,8 +156,7 @@ namespace factorygame {
             header.headerType = reader.readBasicType<Int>();
             if (header.headerType == 0) {
                 header.header = ComponentHeader::read(stream);
-            }
-            else {
+            } else {
                 header.header = ActorHeader::read(stream);
             }
             return header;
@@ -194,7 +193,7 @@ namespace factorygame {
             writer.writeBasicType(parentObjectRoot);
             writer.writeBasicType(parentObjectName);
             writer.writeBasicType(componentCount);
-            stream.write((const char*)raw.data(), raw.size());
+            /*if (raw.size())*/ stream.write((const char*)raw.data(), raw.size());
         }
     };
 
@@ -219,7 +218,7 @@ namespace factorygame {
         void write(std::ostream& stream) const {
             PropertyWriter writer(stream);
             writer.writeBasicType(size);
-            stream.write((const char*)raw.data(), raw.size());
+            /*if (raw.size()) */ stream.write((const char*)raw.data(), raw.size());
         }
     };
 
