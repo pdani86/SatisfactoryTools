@@ -5,6 +5,7 @@
 
 #include <iostream>
 #include <numeric>
+#include <iomanip>
 
 std::vector < std::vector<uint8_t>> compressDataIntoChunks(const std::vector<uint8_t>& data) {
     
@@ -49,6 +50,21 @@ void testSaveFile(std::string filename) {
     std::ofstream uncompWriteBackFile("uncomp_writeback.txt", std::ios::binary);
     uncompWriteBackFile.write(writeBackTestStr.data(), writeBackTestStr.size());
     uncompWriteBackFile.flush();
+
+    /*
+	auto firstActor = std::get<factorygame::ActorObjectRaw>(saveFileBody.objects[0].object);
+	std::cout << "componentCount" << firstActor.componentCount << std::endl;
+	std::cout << "parobjname" << firstActor.parentObjectName.str << std::endl;
+	std::cout << "parobjroot" << firstActor.parentObjectRoot.str << std::endl;
+	std::cout << "raw size" << firstActor.raw.size() << std::endl;
+	std::cout << "size" << firstActor.size << std::endl;
+    
+
+    for (int i = 0; i < 20; ++i) {
+        std::cout << std::hex << std::setfill('0') << std::setw(2) << (int)firstActor.raw[i] << " ";
+    } std::cout << std::endl;
+    */
+    
 
     std::ofstream saveFileWriteBack("SaveFileWriteBack.sav", std::ios::binary);
     factorygame::SaveFileWriter::save(saveFileWriteBack, loader.header(), saveFileBody);
