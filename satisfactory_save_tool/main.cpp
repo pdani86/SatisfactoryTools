@@ -50,6 +50,7 @@ void testSaveFile(std::string filename) {
     uncompWriteBackFile.write(writeBackTestStr.data(), writeBackTestStr.size());
     uncompWriteBackFile.flush();
 
+    /*
     std::ofstream log("log_objects.txt", std::ios::binary);
     for (auto& actorHeader : saveFileBody.actorHeaders) {
         log << actorHeader.instanceName.str << " [" << actorHeader.posX << "," << actorHeader.posY << "," << actorHeader.posZ << "]" << "\n";
@@ -57,6 +58,7 @@ void testSaveFile(std::string filename) {
     for (auto& componentHeader : saveFileBody.componentHeaders) {
         log << componentHeader.instanceName.str << "\n";
     }
+    */
 
     auto recompressedChunks = compressDataIntoChunks(uncompressedData);
     std::cout << "recompressed nchunk: " << recompressedChunks.size() << std::endl;

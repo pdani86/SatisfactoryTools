@@ -51,16 +51,6 @@ namespace factorygame {
         Actor = 1
     };
 
-    struct ObjectHeader {
-        Int headerType{};
-
-        static ObjectHeader read(std::istream& stream) {
-            ObjectHeader header;
-            PropertyReader reader(stream);
-            header.headerType = reader.readBasicType<Int>();
-            return header;
-        }
-    };
 
     struct ActorHeader {
         String typePath;
@@ -154,6 +144,25 @@ namespace factorygame {
         }
     };
 
+    struct ObjectHeader {
+        Int headerType{};
+
+        std::variant<ActorHeader, ComponentHeader> header;
+
+        static ObjectHeader read(std::istream& stream) {
+            ObjectHeader header;
+            PropertyReader reader(stream);
+            header.headerType = reader.readBasicType<Int>();
+            if (header.headerType == 0) {
+                header.header = ComponentHeader::read(stream);
+            }
+            else {
+                header.header = ActorHeader::read(stream);
+            }
+            return header;
+        }
+    };
+
     struct ActorObjectRaw {
         Int size{};
         String parentObjectRoot;
@@ -213,6 +222,19 @@ namespace factorygame {
         }
     };
 
+    struct Object {
+        ObjectType type;
+        std::variant<ComponentObjectRaw, ActorObjectRaw> object;
+
+        void write(std::ostream& stream) {
+            if (type == ObjectType::Component) {
+                std::get<ComponentObjectRaw>(object).write(stream);
+            } else {
+                std::get<ActorObjectRaw>(object).write(stream);
+            }
+        }
+    };
+
     struct ObjectReference {
         String levelName;
         String pathName;
@@ -240,11 +262,9 @@ namespace factorygame {
         Int objectCount{};
         Int collectedObjectsCount{};
 
-        std::vector<ActorHeader> actorHeaders;
-        std::vector<ComponentHeader> componentHeaders;
-        std::vector<int> headerTypes;
-        std::vector<ActorObjectRaw> actorObjects;
-        std::vector<ComponentObjectRaw> componentObjects;
+        std::vector<ObjectHeader> objectHeaders;
+        std::vector<Object> objects;
+        std::vector<ObjectReference> collectedObjects;
 
         static SaveFileBody read(std::istream& stream) {
             PropertyReader reader(stream);
@@ -252,22 +272,10 @@ namespace factorygame {
             header.uncompressedSize = reader.readBasicType<Int>();
             header.objectHeaderCount = reader.readBasicType<Int>();
 
-            header.actorHeaders.reserve(header.objectHeaderCount);
-            header.componentHeaders.reserve(header.objectHeaderCount);
+            header.objectHeaders.reserve(header.objectHeaderCount);
 
             for (int objIx = 0; objIx < header.objectHeaderCount; ++objIx) {
-                auto objectHeader = ObjectHeader::read(stream);
-                switch (objectHeader.headerType) {
-                    case 0: {
-                        header.componentHeaders.emplace_back(ComponentHeader::read(stream));
-                        header.headerTypes.push_back(0);
-                    } break;
-                    case 1: {
-                        header.actorHeaders.emplace_back(ActorHeader::read(stream));
-                        header.headerTypes.push_back(1);
-                    } break;
-                    default: break;
-                }
+                header.objectHeaders.emplace_back(ObjectHeader::read(stream));
             }
 
             header.objectCount = reader.readBasicType<Int>();
@@ -278,17 +286,18 @@ namespace factorygame {
             }
 
             for (int objIx = 0; objIx < header.objectCount; ++objIx) {
-                //break; // 
-                // TODO
-                if (header.headerTypes[objIx] == 0) {
-                    header.componentObjects.emplace_back(ComponentObjectRaw::read(stream));
+                if (header.objectHeaders[objIx].headerType == 0) {
+                    header.objects.push_back({ObjectType::Component, ComponentObjectRaw::read(stream) });
                 } else {
-                    header.actorObjects.emplace_back(ActorObjectRaw::read(stream));
-                    
+                    header.objects.push_back({ ObjectType::Actor, ActorObjectRaw::read(stream) });
                 }
             }
+
             header.collectedObjectsCount = reader.readBasicType<Int>();
-            // TODO
+
+            for (int collectedObjIx = 0; collectedObjIx < header.collectedObjectsCount; ++collectedObjIx) {
+                header.collectedObjects.emplace_back(ObjectReference::read(stream));
+            }
 
             return header;
         }
@@ -298,23 +307,25 @@ namespace factorygame {
             writer.writeBasicType(uncompressedSize);
             writer.writeBasicType(objectHeaderCount);
 
-            for (auto& actorHeader : actorHeaders) {
-                actorHeader.write(stream);
-            }
-            for (auto& componentHeader : componentHeaders) {
-                componentHeader.write(stream);
+            for (auto& objectHeader : objectHeaders) {
+                if (objectHeader.headerType == 0) {
+                    std::get<ComponentHeader>(objectHeader.header).write(stream);
+                } else {
+                    std::get<ActorHeader>(objectHeader.header).write(stream);
+                }
             }
 
             writer.writeBasicType(objectCount);
             
-            for (auto& actor : actorObjects) {
-                actor.write(stream);
+            for (auto& object : objects) {
+                object.write(stream);
             }
-            for (auto& component : componentObjects) {
-                component.write(stream);
-            }
-
+            
             writer.writeBasicType(collectedObjectsCount);
+
+            for (auto& collectedObject : collectedObjects) {
+                collectedObject.write(stream);
+            }
         }
     };
 
