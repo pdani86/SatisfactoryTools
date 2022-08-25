@@ -50,6 +50,9 @@ void testSaveFile(std::string filename) {
     uncompWriteBackFile.write(writeBackTestStr.data(), writeBackTestStr.size());
     uncompWriteBackFile.flush();
 
+    std::ofstream saveFileWriteBack("SaveFileWriteBack.sav", std::ios::binary);
+    factorygame::SaveFileWriter::save(saveFileWriteBack, loader.header(), saveFileBody);
+
     /*
     std::ofstream log("log_objects.txt", std::ios::binary);
     for (auto& actorHeader : saveFileBody.actorHeaders) {

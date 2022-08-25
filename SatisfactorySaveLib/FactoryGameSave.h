@@ -9,6 +9,7 @@
 
 #include "Properties.h"
 #include "PropertyReader.h"
+#include "Compressor.h"
 
 namespace factorygame {
 
@@ -226,7 +227,7 @@ namespace factorygame {
         ObjectType type;
         std::variant<ComponentObjectRaw, ActorObjectRaw> object;
 
-        void write(std::ostream& stream) {
+        void write(std::ostream& stream) const {
             if (type == ObjectType::Component) {
                 std::get<ComponentObjectRaw>(object).write(stream);
             } else {
@@ -302,7 +303,7 @@ namespace factorygame {
             return header;
         }
 
-        void write(std::ostream& stream) {
+        void write(std::ostream& stream) const {
             PropertyWriter writer(stream);
             writer.writeBasicType(uncompressedSize);
             writer.writeBasicType(objectHeaderCount);
@@ -376,5 +377,54 @@ namespace factorygame {
 
     private:
         static std::vector<CompressedChunkInfo> _collectChunkPositions(std::istream& stream);
+    };
+
+
+    
+    class SaveFileWriter {
+    public:
+        struct CompressedChunk {
+            int64_t uncompressedSize{};
+            std::vector<uint8_t> data;
+
+        };
+
+        static void save(std::ostream& stream, const SaveFileHeader& header, const SaveFileBody& body) {
+            header.write(stream);
+
+            std::stringstream uncompressedDataSS; // TODO??, inefficient, stream vs vector
+            body.write(uncompressedDataSS);
+            std::vector<uint8_t> uncompressedData;
+            auto str = uncompressedDataSS.str();
+            uncompressedData.resize(str.size());
+            memcpy(uncompressedData.data(), str.data(), str.size());
+            *reinterpret_cast<int32_t*>(&uncompressedData.data()[0]) = uncompressedData.size(); // fix uncompressed size
+            auto chunks = _compressDataIntoChunks(uncompressedData);
+            for (auto& chunk : chunks) {
+                _writeChunk(stream, chunk);
+            }
+        }
+
+        static void _writeChunk(std::ostream& stream, const CompressedChunk& chunk) {
+            CompressedChunkHeader header;
+            header.compressedSize = header.compressedSize2 = chunk.data.size();
+            header.uncompressedSize = header.uncompressedSize2 =chunk.uncompressedSize;
+            header.write(stream);
+            stream.write((const char*)chunk.data.data(), chunk.data.size());
+        }
+
+        static std::vector<CompressedChunk> _compressDataIntoChunks(const std::vector<uint8_t>& data) {
+            std::vector<CompressedChunk> chunks;
+            int64_t rem = data.size();
+            constexpr int64_t blockSize = 64 * 1024;
+            const uint8_t* srcPtr = data.data();
+            do {
+                auto size = std::min(blockSize, rem);
+                chunks.emplace_back(CompressedChunk{size, Compressor::compress(srcPtr, size) });
+                srcPtr += size;
+                rem -= size;
+            } while (rem > 0);
+            return chunks;
+        }
     };
 }
