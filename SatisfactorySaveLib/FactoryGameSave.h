@@ -416,7 +416,7 @@ namespace factorygame {
         static std::vector<CompressedChunk> _compressDataIntoChunks(const std::vector<uint8_t>& data) {
             std::vector<CompressedChunk> chunks;
             int64_t rem = data.size();
-            constexpr int64_t blockSize = 64 * 1024;
+            constexpr int64_t blockSize = 128 * 1024;
             const uint8_t* srcPtr = data.data();
             do {
                 auto size = std::min(blockSize, rem);
