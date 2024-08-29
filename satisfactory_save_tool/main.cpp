@@ -22,6 +22,42 @@ std::vector < std::vector<uint8_t>> compressDataIntoChunks(const std::vector<uin
     return chunks;
 }
 
+struct LogObjectOverloadSet {
+    LogObjectOverloadSet(std::ofstream& ofs) : log(ofs) {}
+
+    void operator()(const factorygame::ActorHeader& actorHeader) {
+        log << actorHeader.instanceName.str << " [" << actorHeader.posX << "," << actorHeader.posY << "," << actorHeader.posZ << "]" << "\n";
+    }
+
+    void operator()(const factorygame::ComponentHeader& componentHeader) {
+        log << componentHeader.instanceName.str << " <- " << componentHeader.parentActorName.str << "\n";
+    }
+
+    std::ofstream& log;
+};
+
+void log_objects(const factorygame::SaveFileBody& saveFileBody) {
+   
+   std::ofstream log("log_objects_2.txt", std::ios::binary);
+
+   LogObjectOverloadSet logger(log);
+
+   for (auto& objectHeader : saveFileBody.objectHeaders) {
+       std::visit(logger, objectHeader.header);
+   }
+   for (auto& object : saveFileBody.objects) {
+       
+   }
+   /*
+   for (auto& actorHeader : saveFileBody.actorHeaders) {
+       log << actorHeader.instanceName.str << " [" << actorHeader.posX << "," << actorHeader.posY << "," << actorHeader.posZ << "]" << "\n";
+   }
+   for (auto& componentHeader : saveFileBody.componentHeaders) {
+       log << componentHeader.instanceName.str << "\n";
+   }
+   */
+}
+
 void testSaveFile(std::string filename) {
     factorygame::SaveFileLoader loader(filename);
 
@@ -30,16 +66,24 @@ void testSaveFile(std::string filename) {
     std::cout << "nchunk: " << chunks.size() << std::endl;
     std::ifstream ifs;
     ifs.open(filename, std::ios::binary);
-    std::ofstream ofs;
-    std::string uncompressedFilename = "uncompressed_body.dat";
-    ofs.open(uncompressedFilename, std::ios::binary);
-    auto uncompressedData = factorygame::SaveFileLoader::decompressChunks(loader, ifs);
-    ofs.write((const char*)uncompressedData.data(), uncompressedData.size());
-    ofs.close();
-    std::ifstream uncompressedInputStream;
-    uncompressedInputStream.open(uncompressedFilename, std::ios::binary);
+    //std::ofstream ofs;
+    //std::string uncompressedFilename = "uncompressed_body.dat";
+    //ofs.open(uncompressedFilename, std::ios::binary);
 
-    auto saveFileBody = factorygame::SaveFileBody::read(uncompressedInputStream);
+    auto uncompressedData = factorygame::SaveFileLoader::decompressChunks(loader, ifs);
+
+    //ofs.write((const char*)uncompressedData.data(), uncompressedData.size());
+    //ofs.close();
+    //std::ifstream uncompressedInputStream;
+    //uncompressedInputStream.open(uncompressedFilename, std::ios::binary);
+    //auto saveFileBody = factorygame::SaveFileBody::read(uncompressedInputStream);
+
+    std::stringstream ss;
+    std::copy(uncompressedData.begin(), uncompressedData.end(), std::ostreambuf_iterator<char>(ss));
+    auto saveFileBody = factorygame::SaveFileBody::read(ss);
+
+    log_objects(saveFileBody);
+    return;
 
     std::stringstream writeBackTestSS;
     saveFileBody.write(writeBackTestSS);
@@ -69,15 +113,6 @@ void testSaveFile(std::string filename) {
     std::ofstream saveFileWriteBack("SaveFileWriteBack.sav", std::ios::binary);
     factorygame::SaveFileWriter::save(saveFileWriteBack, loader.header(), saveFileBody);
 
-    /*
-    std::ofstream log("log_objects.txt", std::ios::binary);
-    for (auto& actorHeader : saveFileBody.actorHeaders) {
-        log << actorHeader.instanceName.str << " [" << actorHeader.posX << "," << actorHeader.posY << "," << actorHeader.posZ << "]" << "\n";
-    }
-    for (auto& componentHeader : saveFileBody.componentHeaders) {
-        log << componentHeader.instanceName.str << "\n";
-    }
-    */
 
     auto recompressedChunks = compressDataIntoChunks(uncompressedData);
     std::cout << "recompressed nchunk: " << recompressedChunks.size() << std::endl;
