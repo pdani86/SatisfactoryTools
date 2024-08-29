@@ -22,15 +22,23 @@ std::vector < std::vector<uint8_t>> compressDataIntoChunks(const std::vector<uin
     return chunks;
 }
 
-struct LogObjectOverloadSet {
-    LogObjectOverloadSet(std::ofstream& ofs) : log(ofs) {}
 
+struct LogObjectsOverloadSet {
+    LogObjectsOverloadSet(std::ofstream& ofs) : log(ofs) {}
     void operator()(const factorygame::ActorHeader& actorHeader) {
         log << actorHeader.instanceName.str << " [" << actorHeader.posX << "," << actorHeader.posY << "," << actorHeader.posZ << "]" << "\n";
     }
 
     void operator()(const factorygame::ComponentHeader& componentHeader) {
         log << componentHeader.instanceName.str << " <- " << componentHeader.parentActorName.str << "\n";
+    }
+
+    void operator()(const factorygame::ComponentObjectRaw& component) {
+        log << component.size << "\n";
+    }
+
+    void operator()(const factorygame::ActorObjectRaw& actor) {
+        log << actor.size << "\n";
     }
 
     std::ofstream& log;
@@ -40,22 +48,14 @@ void log_objects(const factorygame::SaveFileBody& saveFileBody) {
    
    std::ofstream log("log_objects_2.txt", std::ios::binary);
 
-   LogObjectOverloadSet logger(log);
+   LogObjectsOverloadSet logger(log);
 
    for (auto& objectHeader : saveFileBody.objectHeaders) {
        std::visit(logger, objectHeader.header);
    }
    for (auto& object : saveFileBody.objects) {
-       
+       std::visit(logger, object.object);
    }
-   /*
-   for (auto& actorHeader : saveFileBody.actorHeaders) {
-       log << actorHeader.instanceName.str << " [" << actorHeader.posX << "," << actorHeader.posY << "," << actorHeader.posZ << "]" << "\n";
-   }
-   for (auto& componentHeader : saveFileBody.componentHeaders) {
-       log << componentHeader.instanceName.str << "\n";
-   }
-   */
 }
 
 void testSaveFile(std::string filename) {
