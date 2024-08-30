@@ -53,6 +53,27 @@ namespace factorygame {
     };
 
 
+    struct ObjectReference {
+        String levelName;
+        String pathName;
+
+        static ObjectReference read(std::istream& stream) {
+            PropertyReader reader(stream);
+            ObjectReference result;
+            result.levelName = reader.readBasicType<String>();
+            result.pathName = reader.readBasicType<String>();
+            return result;
+        }
+
+        void write(std::ostream& stream) const {
+            PropertyWriter writer(stream);
+            writer.writeBasicType(levelName);
+            writer.writeBasicType(pathName);
+        }
+
+    };
+
+
     struct ActorHeader {
         String typePath;
         String rootObject;
@@ -197,6 +218,35 @@ namespace factorygame {
         }
     };
 
+    struct ActorObject {
+        static ActorObject fromRaw(const ActorObjectRaw& raw, bool print) {
+            ActorObject actor;
+            auto& data = raw.raw;
+            std::string_view view((const char*)data.data(), data.size());
+            std::istringstream stream(view.data());
+
+            PropertyReader reader(stream);
+
+            actor.parent_root = reader.readBasicType<String>();
+            actor.parent_name = reader.readBasicType<String>();
+            actor.component_count = reader.readBasicType<Int>();
+
+            for (int i = 0; i < actor.component_count; ++i) {
+                actor.componentRefs.push_back(ObjectReference::read(stream));
+            }
+
+            // properties
+            // trailing bytes
+
+            return actor;
+        }
+
+        String parent_root;
+        String parent_name;
+        Int component_count;
+        std::vector<ObjectReference> componentRefs;
+    };
+
     struct ComponentObjectRaw {
         Int size{};
 
@@ -222,6 +272,55 @@ namespace factorygame {
         }
     };
 
+    struct ComponentObject {
+        static ComponentObject fromRaw(const ComponentObjectRaw& raw, bool print) {
+            ComponentObject component;
+           
+            //auto* data = raw.raw.data();
+            auto& data = raw.raw;
+            std::string_view view((const char*)data.data(), data.size());
+            std::istringstream stream(view.data());
+
+            PropertyReader reader(stream);
+            
+            component.index = reader.readBasicType<Int>();
+            component.element_type = reader.readBasicType<String>();
+            reader.readBasicType<Byte>(); // padding
+            component.element_count = reader.readBasicType<Int>();
+
+            if (print) {
+                //std::cout << "component " << component.
+            }
+
+            for(int ix = 0; ix < component.element_count; ++ix) {
+                
+                auto name = reader.readBasicType<String>();
+                auto type = reader.readBasicType<String>();
+                auto size = reader.readBasicType<Int>();
+                reader.readBasicType<Int>(); // padding
+                auto element_type = reader.readBasicType<String>();
+                reader.readBasicType<Int>(); // UUID
+                reader.readBasicType<Int>(); // UUID
+                reader.readBasicType<Int>(); // UUID
+                reader.readBasicType<Int>(); // UUID
+                reader.readBasicType<Byte>(); // padding
+                if (print) {
+                    std::cout << "component " << name.str << "\n";
+                }
+                for (int i = 0; i < size; ++i) {
+                    // TODO, typed data
+                    stream.get();
+                }
+            }
+
+            return component;
+        }
+
+        Int index;
+        String element_type;
+        Int element_count;
+    };
+
     struct Object {
         ObjectType type;
         std::variant<ComponentObjectRaw, ActorObjectRaw> object;
@@ -235,25 +334,6 @@ namespace factorygame {
         }
     };
 
-    struct ObjectReference {
-        String levelName;
-        String pathName;
-
-        static ObjectReference read(std::istream& stream) {
-            PropertyReader reader(stream);
-            ObjectReference result;
-            result.levelName = reader.readBasicType<String>();
-            result.pathName = reader.readBasicType<String>();
-            return result;
-        }
-
-        void write(std::ostream& stream) const {
-            PropertyWriter writer(stream);
-            writer.writeBasicType(levelName);
-            writer.writeBasicType(pathName);
-        }
-
-    };
 
     
     struct SaveFileBody {

@@ -33,15 +33,24 @@ struct LogObjectsOverloadSet {
         log << componentHeader.instanceName.str << " <- " << componentHeader.parentActorName.str << "\n";
     }
 
-    void operator()(const factorygame::ComponentObjectRaw& component) {
-        log << component.size << "\n";
+    void operator()(const factorygame::ComponentObjectRaw& component_) {
+        auto component = factorygame::ComponentObject::fromRaw(component_, 19094 == (cnt++));
+        log << component_.size << " | " << component.index << " | " << component.element_type.str << "|" << component.element_count << "\n";
     }
 
-    void operator()(const factorygame::ActorObjectRaw& actor) {
-        log << actor.size << "\n";
+    void operator()(const factorygame::ActorObjectRaw& actor_) {
+        cnt++;
+        auto actor = factorygame::ActorObject::fromRaw(actor_, false);
+        log << "actor | " << actor.parent_root.str << " | " << actor.parent_root.str << " | " << actor.component_count << "\n";
+        for (auto& componentRef : actor.componentRefs) {
+            log << "    " << componentRef.levelName.str << " | " << componentRef.pathName.str << "\n";
+        }
+        
+        //log << actor.size << "\n";
     }
 
     std::ofstream& log;
+    int cnt{ 0 };
 };
 
 void log_objects(const factorygame::SaveFileBody& saveFileBody) {
@@ -50,10 +59,15 @@ void log_objects(const factorygame::SaveFileBody& saveFileBody) {
 
    LogObjectsOverloadSet logger(log);
 
+   int index = 0;
    for (auto& objectHeader : saveFileBody.objectHeaders) {
+       log << index++ << " | ";
        std::visit(logger, objectHeader.header);
    }
+
+   index = 0;
    for (auto& object : saveFileBody.objects) {
+       log << index++ << " | ";
        std::visit(logger, object.object);
    }
 }
@@ -156,6 +170,6 @@ int main(int argc, const char* argv[])
         std::cout << "exception: " << e.what() << std::endl;
     }
     std::cout << "DONE" << std::endl;
-    getchar();
+    //getchar();
     return 0;
 }
