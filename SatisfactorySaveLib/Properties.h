@@ -11,7 +11,7 @@ namespace factorygame {
     using Float = float;
 
     struct String {
-        int32_t size;
+        int32_t size{};
         std::string str;
     };
 

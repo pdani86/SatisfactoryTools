@@ -221,12 +221,13 @@ namespace factorygame {
     struct ActorObject {
         static ActorObject fromRaw(const ActorObjectRaw& raw, bool print) {
             ActorObject actor;
+            /*
             auto& data = raw.raw;
             std::string_view view((const char*)data.data(), data.size());
             std::istringstream stream(view.data());
 
             PropertyReader reader(stream);
-
+            
             actor.parent_root = reader.readBasicType<String>();
             actor.parent_name = reader.readBasicType<String>();
             actor.component_count = reader.readBasicType<Int>();
@@ -234,7 +235,7 @@ namespace factorygame {
             for (int i = 0; i < actor.component_count; ++i) {
                 actor.componentRefs.push_back(ObjectReference::read(stream));
             }
-
+            */
             // properties
             // trailing bytes
 
@@ -279,19 +280,41 @@ namespace factorygame {
             //auto* data = raw.raw.data();
             auto& data = raw.raw;
             std::string_view view((const char*)data.data(), data.size());
-            std::istringstream stream(view.data());
+            //std::istringstream stream(view.data());
+            //std::istringstream stream;
+            std::stringstream stream;
+            stream.write(view.data(), view.size());
+            auto str = stream.str();
 
             PropertyReader reader(stream);
-            
+
+            static int cnt = 0;
+            if (cnt == 0) {
+                std::cout << (int)(unsigned char)(str[0]) << ",";
+                std::cout << (int)(unsigned char)(str[1]) << ",";
+                std::cout << (int)(unsigned char)(str[2]) << ",";
+                std::cout << (int)(unsigned char)(str[3]) << ",";
+                std::cout << (int)(unsigned char)(str[4]) << ",";
+                std::cout << "---\n";
+                std::cout << "raw: (" << str.size() << ")" << str << "\n";
+                std::cout << "---\n";
+
+                std::cout << "name: " << reader.readBasicType<String>().str << "\n";
+                std::cout << "type: " << reader.readBasicType<String>().str << "\n";
+                std::cout << "count: " << reader.readBasicType<Int>()<< "\n";
+
+                cnt++;
+            }
+
+           
+            /*
             component.index = reader.readBasicType<Int>();
             component.element_type = reader.readBasicType<String>();
             reader.readBasicType<Byte>(); // padding
             component.element_count = reader.readBasicType<Int>();
-
-            if (print) {
-                //std::cout << "component " << component.
-            }
-
+            */
+            
+            /*
             for(int ix = 0; ix < component.element_count; ++ix) {
                 
                 auto name = reader.readBasicType<String>();
@@ -311,7 +334,7 @@ namespace factorygame {
                     // TODO, typed data
                     stream.get();
                 }
-            }
+            }*/
 
             return component;
         }
